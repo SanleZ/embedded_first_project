@@ -1,0 +1,34 @@
+[
+  {
+    "file": "src/interrupts.c",
+    "arguments": [
+      "/usr/bin/arm-none-eabi-gcc",
+      "-mcpu=cortex-m4",
+      "-mthumb",
+      "-mfpu=fpv4-sp-d16",
+      "-mfloat-abi=hard",
+      "-O0",
+      "-g",
+      "-c",
+      "-std=gnu11",
+      "-Wall",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Isrc",
+      "-Ilib/cmsis/Core/Include",
+      "-Ilib/cmsis/Device/Include",
+      "-Ilib/hal/Inc",
+      "-Ilib/startup",
+      "-DUSE_HAL_DRIVER",
+      "-DSTM32F411xE",
+      "-fstack-protector-all",
+      "-Isrc",
+      "-c",
+      "src/interrupts.c",
+      "-o",
+      "build/interrupts.o"
+    ],
+    "directory": "/home/alex/projects/embedded/first-project",
+    "output": "build/interrupts.o"
+  }
+]
