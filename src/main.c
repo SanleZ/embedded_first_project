@@ -9,7 +9,14 @@
 
 volatile uint8_t button_event = 0;
 
-void on_button_press(void) { button_event = 1; }
+volatile uint32_t last_button_irq = 0;
+
+void on_button_press(void) {
+  if ((ticks - last_button_irq) > 50) {
+    last_button_irq = ticks;
+    button_event = 1;
+  }
+}
 
 #define BTN_LINE 0
 #define LED_LINE 13
@@ -45,21 +52,25 @@ int main(int argc, char *argv[]) {
   volatile uint32_t last_blink_time = 0;
   volatile uint32_t last_button_time = 0;
   volatile uint8_t led_on = 1;
+  volatile uint8_t button_gpio_status = 1;
 
   while (1) {
 
     if (button_event) {
-
       button_event = 0;
       if (!button_pressed) {
         button_pressed = 1;
-        last_button_time = ticks + 200;
+        button_gpio_status = gpio_read(btn);
+        last_button_time = ticks + 50;
       }
     }
 
     if (button_pressed && (ticks >= last_button_time)) {
       button_pressed = 0;
-      blink_state = !blink_state;
+      if (button_gpio_status == 0) {
+        button_gpio_status = 1;
+        blink_state = !blink_state;
+      }
     }
 
     // LED control
