@@ -2,7 +2,7 @@
 #include "common/common.h"
 #include <stdint.h>
 
-#define SYSCFG_BASE 0x40013800UL
+// #define SYSCFG_BASE 0x40013800UL
 
 typedef struct {
   volatile uint32_t MEMRMP;
@@ -11,6 +11,6 @@ typedef struct {
   volatile uint32_t CMPCR;
 } syscfg_t;
 
-#define SYSCFG ((syscfg_t *)(uintptr_t)SYSCFG_BASE)
+// #define SYSCFG ((syscfg_t *)(uintptr_t)SYSCFG_BASE)
 
 void syscfg_map_exti_line(gpio_pin_t pin);

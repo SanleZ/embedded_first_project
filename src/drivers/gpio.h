@@ -22,6 +22,7 @@ typedef enum { GPIO_NO_PULL = 0, GPIO_PULLUP, GPIO_PULLDOWN } gpio_pull_t;
 
 void gpio_set_mode(gpio_pin_t gpio_pin, gpio_mode_t mode);
 void gpio_set_pull(gpio_pin_t gpio_pin, gpio_pull_t pull_type);
+uint8_t gpio_read(gpio_pin_t gpio_pin);
 void gpio_write(gpio_pin_t gpio_pin, uint8_t value);
 void gpio_reset(gpio_pin_t gpio_pin);
 void gpio_set(gpio_pin_t gpio_pin);

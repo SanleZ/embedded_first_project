@@ -1,7 +1,8 @@
+#pragma once
 #include "common/common.h"
 #include <stdint.h>
 
-#define RCC_BASE 0x40023800UL
+// #define RCC_BASE 0x40023800UL
 
 typedef struct {
   volatile uint32_t CR, PLLCCFGR, CFGR, CIR, AHB1RSTR, AHB2RSTR, RESERVED0[2],
@@ -11,7 +12,7 @@ typedef struct {
       PLLI2SCFGR;
 } rcc_t;
 
-#define RCC ((rcc_t *)((uintptr_t)RCC_BASE))
+// #define RCC ((rcc_t *)((uintptr_t)RCC_BASE))
 
-void rcc_enable_gpio(gpio_pin_t port_num); // Enable clocks for GPIO port
+void rcc_enable_gpio(gpio_pin_t gpio_pin); // Enable clocks for GPIO port
 void rcc_enable_syscfg(void);              // Enable SYSCFG clock for EXTI

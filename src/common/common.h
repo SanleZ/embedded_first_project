@@ -1,21 +1,16 @@
 #pragma once
 #include <stdint.h>
 
-typedef uint16_t gpio_pin_t;
+typedef enum { GPIO_PORT_A, GPIO_PORT_B, GPIO_PORT_C } gpio_port_t;
 
-#define BIT_OFFSET(offset) (1U << (offset))
-#define N_BIT_OFFSET(offset, n) ((n) << (offset))
-#define GPIO_PIN(port_name, pin_num)                                           \
-  ((gpio_pin_t)(((port_name) - 'A') << 8) | (pin_num))
+typedef struct {
+  gpio_port_t port;
+  uint8_t pin;
+} gpio_pin_t;
 
-static inline uint8_t get_pin_num(gpio_pin_t gpio_pin) {
-  return gpio_pin & 0xFF;
-}
+#define BIT_OFFSET(offset) (1U << ((offset) & 31))
+#define N_BIT_OFFSET(offset, n) ((uint32_t)(n) << (offset))
 
-static inline uint8_t get_port_num(gpio_pin_t gpio_pin) {
-  return gpio_pin >> 8;
-}
-
-static inline gpio_pin_t get_gpio_pin(char port, uint8_t num) {
-  return (((port) - 'A') << 8) | (num);
+static inline gpio_pin_t get_gpio_pin(gpio_port_t port, uint8_t num) {
+  return (gpio_pin_t){.port = port, .pin = (num)};
 }
