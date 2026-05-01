@@ -14,10 +14,13 @@ typedef struct {
   uint32_t last_change_time;
   uint32_t debounce_ms;
   button_active_t active_level;
+  uint32_t press_time;
+  uint32_t long_press_ms;
+  uint8_t long_press_sent;
 } button_t;
 
 void button_init(button_t *btn, gpio_pin_t gpio_pin, uint32_t debounce_ms,
-                 button_active_t active_level);
+                 button_active_t active_level, uint32_t long_press_ms);
 
 void button_handle_edge(button_t *btn);
 

@@ -5,7 +5,8 @@ typedef enum {
   EVENT_NONE = 0,
   EVENT_BUTTON_EDGE,
   EVENT_BUTTON_PRESS,
-  EVENT_BUTTON_RELEASE
+  EVENT_BUTTON_RELEASE,
+  EVENT_BUTTON_LONG_PRESS
 } event_type_t;
 
 typedef struct {
