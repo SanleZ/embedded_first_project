@@ -1,3 +1,4 @@
+#include "app/button.h"
 #include "common/common.h"
 #include "core/event.h"
 #include "core/systick.h"
@@ -9,63 +10,63 @@
 #include <stdint.h>
 
 volatile uint32_t last_button_irq = 0;
-
-void on_button_press(void) {
-  event_push((event_t){.type = EVENT_BUTTON_PRESSED, .data = 0});
-}
-
 #define BTN_LINE 0
 #define LED_LINE 13
 
+void on_button_irq(void) {
+  event_push((event_t){.type = EVENT_BUTTON_EDGE, .data = BTN_LINE});
+}
+
 int main(int argc, char *argv[]) {
   event_init();
+  button_t btn;
   gpio_pin_t led = get_gpio_pin(GPIO_PORT_C, LED_LINE);
-  gpio_pin_t btn = get_gpio_pin(GPIO_PORT_A, BTN_LINE);
+  gpio_pin_t gpio_btn_pin = get_gpio_pin(GPIO_PORT_A, BTN_LINE);
+
+  button_init(&btn, gpio_btn_pin, 50, BUTTON_ACTIVE_LOW);
 
   rcc_enable_gpio(led);
-  rcc_enable_gpio(btn);
+  rcc_enable_gpio(gpio_btn_pin);
   rcc_enable_syscfg();
 
   gpio_set_mode(led, GPIO_OUTPUT_MODE);
-  gpio_set_mode(btn, GPIO_INPUT_MODE);
-  gpio_set_pull(btn, GPIO_PULLUP);
+  gpio_set_mode(gpio_btn_pin, GPIO_INPUT_MODE);
+  gpio_set_pull(gpio_btn_pin, GPIO_PULLUP);
 
   systick_init(16000, SYSTICK_SRC_AHB);
 
   /* Map EXTI line to GPIO */
-  syscfg_map_exti_line(btn);
+  syscfg_map_exti_line(gpio_btn_pin);
 
   // EXTI configuration
-  exti_configure_line(btn.pin, EXTI_TRIGGER_FALLING);
-  exti_enable_line(btn.pin);
+  exti_configure_line(gpio_btn_pin.pin, EXTI_TRIGGER_FALLING);
+  exti_enable_line(gpio_btn_pin.pin);
 
   // register callback
-  exti_register_callback(btn.pin, on_button_press);
+  exti_register_callback(gpio_btn_pin.pin, on_button_irq);
 
   // Enable interrrupt in NVIC
   nvic_enable_irq(EXTI0_IRQn);
 
-  volatile uint8_t button_locked = 0;
   volatile uint8_t blink_state = 1;
   volatile uint32_t last_blink_time = 0;
-  volatile uint32_t last_button_time = 0;
   volatile uint8_t led_on = 1;
   event_t e;
   while (1) {
     while ((e = event_pop()).type != EVENT_NONE) {
-      if (e.type == EVENT_BUTTON_PRESSED) {
-        if (button_locked) {
-          continue;
-        }
-        button_locked = 1;
-        last_button_time = ticks;
+      switch (e.type) {
+      case EVENT_BUTTON_EDGE:
+        button_handle_edge(&btn);
+        break;
+      case EVENT_BUTTON_PRESS:
         blink_state = !blink_state;
+        break;
+      default:
+        break;
       }
     }
+    button_update(&btn);
 
-    if (button_locked && (ticks >= last_button_time)) {
-      button_locked = 0;
-    }
     // LED control
     if (blink_state) {
       if ((ticks - last_blink_time) > 300) {

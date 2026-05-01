@@ -5,7 +5,7 @@ typedef enum { GPIO_PORT_A, GPIO_PORT_B, GPIO_PORT_C } gpio_port_t;
 
 typedef struct {
   gpio_port_t port;
-  uint8_t pin;
+  uint16_t pin;
 } gpio_pin_t;
 
 #define BIT_OFFSET(offset) (1U << ((offset) & 31))
