@@ -16,21 +16,24 @@ volatile uint32_t last_button_irq = 0;
 typedef enum {
   LED_BLINK_FAST,
   LED_BLINK_SLOW,
-  LED_CONTINUOUS_LIGHTNING
+  LED_CONTINUOUS_LIGHTNING,
+  LED_BLINK_SUPER_FAST
 
 } led_lightning_t;
 
+static button_t btn;
+
 void on_button_irq(void) {
-  event_push((event_t){.type = EVENT_BUTTON_EDGE, .data = BTN_LINE});
+  button_handle_edge(&btn);
+  // event_push((event_t){.type = EVENT_BUTTON_EDGE, .data = BTN_LINE});
 }
 
 int main(int argc, char *argv[]) {
   event_init();
-  button_t btn;
   gpio_pin_t led = get_gpio_pin(GPIO_PORT_C, LED_LINE);
   gpio_pin_t gpio_btn_pin = get_gpio_pin(GPIO_PORT_A, BTN_LINE);
 
-  button_init(&btn, gpio_btn_pin, 50, BUTTON_ACTIVE_LOW, 1000);
+  button_init(&btn, gpio_btn_pin, 50, BUTTON_ACTIVE_LOW, 1000, 300);
 
   rcc_enable_gpio(led);
   rcc_enable_gpio(gpio_btn_pin);
@@ -63,18 +66,21 @@ int main(int argc, char *argv[]) {
   while (1) {
     while ((e = event_pop()).type != EVENT_NONE) {
       switch (e.type) {
-      case EVENT_BUTTON_EDGE:
-        button_handle_edge(&btn);
-        break;
-      case EVENT_BUTTON_PRESS:
+      // case EVENT_BUTTON_EDGE:
+      //   button_handle_edge(&btn);
+      //   break;
+      case EVENT_BUTTON_SINGLE_CLICK:
         led_status = led_status == LED_BLINK_SLOW ? LED_CONTINUOUS_LIGHTNING
                                                   : LED_BLINK_SLOW;
         break;
       case EVENT_BUTTON_LONG_PRESS:
         led_status = LED_BLINK_FAST;
+        break;
+      case EVENT_BUTTON_DOUBLE_CLICK:
+        led_status = LED_BLINK_SUPER_FAST;
+        break;
       default:
         break;
-        led_status = LED_CONTINUOUS_LIGHTNING;
       }
     }
     button_update(&btn);
@@ -88,6 +94,13 @@ int main(int argc, char *argv[]) {
     case LED_BLINK_FAST:
       if ((ticks - last_blink_time) >
           (led_status == LED_BLINK_SLOW ? 300 : 100)) {
+        last_blink_time = ticks;
+        gpio_write(led, led_on);
+        led_on = !led_on;
+      }
+      break;
+    case LED_BLINK_SUPER_FAST:
+      if ((ticks - last_blink_time) > 50) {
         last_blink_time = ticks;
         gpio_write(led, led_on);
         led_on = !led_on;

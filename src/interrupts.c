@@ -1,25 +1,3 @@
-// #include "core/systick.h"
-// #include "drivers/exti.h"
-// #include "drivers/gpio.h"
-// #include <stdint.h>
-
-// volatile uint8_t button_pressed_flag = 0;
-//
-// void EXTI0_IRQHandler(void) {
-//   if (EXTI->PR & (1 << 0)) {
-//     EXTI->PR = (1 << 0);
-//
-//     static uint32_t last_time = 0;
-//
-//     if ((ticks - last_time) > 200) {
-//       last_time = ticks;
-//       gpio_t *gpio = GPIO(0);
-//       if (!(gpio->IDR & (1 << 0))) {
-//         button_pressed_flag = 1;
-//       }
-//     }
-//   }
-// }
 #include "drivers/exti.h"
 
 void EXTI0_IRQHandler(void) { exti_handle_irq(0); }

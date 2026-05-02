@@ -3,18 +3,24 @@
 #include "core/event.h"
 #include "core/systick.h"
 #include "drivers/gpio.h"
+#include <stdint.h>
 
 void button_init(button_t *btn, gpio_pin_t gpio_pin, uint32_t debounce_ms,
-                 button_active_t active_level, uint32_t long_press_ms) {
+                 button_active_t active_level, uint32_t long_press_ms,
+                 uint32_t double_click_ms) {
   btn->pin = gpio_pin;
   btn->debounce_ms = debounce_ms;
   btn->active_level = active_level;
-  btn->stable_state = gpio_read(gpio_pin);
+  btn->current_state = gpio_read(gpio_pin);
   btn->last_change_time = 0;
 
   btn->press_time = 0;
   btn->long_press_ms = long_press_ms;
-  btn->long_press_sent = 0;
+  btn->long_press_event_sent = 0;
+
+  btn->last_release_time = 0;
+  btn->double_click_ms = double_click_ms;
+  btn->double_click_pending = 0;
 }
 
 void button_handle_edge(button_t *btn) { btn->last_change_time = ticks; }
@@ -28,33 +34,71 @@ static uint8_t button_is_active(button_t *btn, uint8_t state) {
 }
 
 void button_update(button_t *btn) {
+  // debounce
   if ((ticks - btn->last_change_time) < btn->debounce_ms) {
     return;
   }
 
-  uint8_t current = gpio_read(btn->pin);
+  uint8_t current_button_gpio_state = gpio_read(btn->pin);
 
-  if (btn->stable_state != current) {
-    btn->stable_state = current;
+  // state has been changed
+  if (btn->current_state != current_button_gpio_state) {
 
-    if (button_is_active(btn, current)) {
+    btn->current_state = current_button_gpio_state;
+
+    if (button_is_active(btn, current_button_gpio_state)) {
+
+      // pressed
       btn->press_time = ticks;
-      btn->long_press_sent = 0;
-      event_push((event_t){.type = EVENT_BUTTON_PRESS, .data = btn->pin.pin});
+      btn->long_press_event_sent = 0;
+
     } else {
-      event_push((event_t){.type = EVENT_BUTTON_RELEASE, .data = btn->pin.pin});
+
+      // released
+      if (btn->long_press_event_sent) {
+        // ther was a long press - ignore clicks
+        btn->double_click_pending = 0;
+      } else {
+
+        if (btn->double_click_pending &&
+            (ticks - btn->last_release_time <= btn->double_click_ms)) {
+
+          // DOUBLE CLICK
+          btn->double_click_pending = 0;
+
+          event_push((event_t){.type = EVENT_BUTTON_DOUBLE_CLICK,
+                               .data = btn->pin.pin});
+
+        } else {
+          // wait for the second click
+          btn->double_click_pending = 1;
+          btn->last_release_time = ticks;
+        }
+      }
     }
   }
 
-  if (!button_is_active(btn, btn->stable_state)) {
-    return;
+  // --- long press ---
+  if (button_is_active(btn, btn->current_state)) {
+
+    if (!btn->long_press_event_sent &&
+        (ticks - btn->press_time >= btn->long_press_ms)) {
+
+      btn->long_press_event_sent = 1;
+      btn->double_click_pending = 0;
+
+      event_push(
+          (event_t){.type = EVENT_BUTTON_LONG_PRESS, .data = btn->pin.pin});
+    }
   }
 
-  // long press
-  if (!btn->long_press_sent &&
-      (ticks - btn->press_time) >= btn->long_press_ms) {
-    btn->long_press_sent = 1;
+  // --- завершение single click ---
+  if (btn->double_click_pending &&
+      (ticks - btn->last_release_time > btn->double_click_ms)) {
+
+    btn->double_click_pending = 0;
+
     event_push(
-        (event_t){.type = EVENT_BUTTON_LONG_PRESS, .data = btn->pin.pin});
+        (event_t){.type = EVENT_BUTTON_SINGLE_CLICK, .data = btn->pin.pin});
   }
 }
