@@ -17,7 +17,8 @@ typedef enum {
   LED_BLINK_FAST,
   LED_BLINK_SLOW,
   LED_CONTINUOUS_LIGHTNING,
-  LED_BLINK_SUPER_FAST
+  LED_BLINK_SUPER_FAST,
+  LED_BLINK_SUPER_SLOW
 
 } led_lightning_t;
 
@@ -33,7 +34,7 @@ int main(int argc, char *argv[]) {
   gpio_pin_t led = get_gpio_pin(GPIO_PORT_C, LED_LINE);
   gpio_pin_t gpio_btn_pin = get_gpio_pin(GPIO_PORT_A, BTN_LINE);
 
-  button_init(&btn, gpio_btn_pin, 50, BUTTON_ACTIVE_LOW, 1000, 300);
+  button_init(&btn, gpio_btn_pin, 50, BUTTON_ACTIVE_LOW, 500, 300, 1000, 100);
 
   rcc_enable_gpio(led);
   rcc_enable_gpio(gpio_btn_pin);
@@ -79,6 +80,9 @@ int main(int argc, char *argv[]) {
       case EVENT_BUTTON_DOUBLE_CLICK:
         led_status = LED_BLINK_SUPER_FAST;
         break;
+      case EVENT_BUTTON_REPEAT:
+        led_status = LED_BLINK_SUPER_SLOW;
+        break;
       default:
         break;
       }
@@ -101,6 +105,13 @@ int main(int argc, char *argv[]) {
       break;
     case LED_BLINK_SUPER_FAST:
       if ((ticks - last_blink_time) > 50) {
+        last_blink_time = ticks;
+        gpio_write(led, led_on);
+        led_on = !led_on;
+      }
+      break;
+    case LED_BLINK_SUPER_SLOW:
+      if ((ticks - last_blink_time) > 1000) {
         last_blink_time = ticks;
         gpio_write(led, led_on);
         led_on = !led_on;

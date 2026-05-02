@@ -24,11 +24,20 @@ typedef struct {
   uint32_t last_release_time;
   uint32_t double_click_ms;
   uint32_t double_click_pending;
+
+  // auto-repeat
+  uint32_t repeat_start_ms;
+  uint32_t repeat_interval_ms;
+
+  uint32_t repeat_last_time;
+  uint8_t repeat_active;
+
 } button_t;
 
 void button_init(button_t *btn, gpio_pin_t gpio_pin, uint32_t debounce_ms,
                  button_active_t active_level, uint32_t long_press_ms,
-                 uint32_t double_click_ms);
+                 uint32_t double_click_ms, uint32_t repeat_start_ms,
+                 uint32_t repeat_interval_ms);
 
 void button_handle_edge(button_t *btn);
 
