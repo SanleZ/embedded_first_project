@@ -8,7 +8,9 @@
 void button_init(button_t *btn, gpio_pin_t gpio_pin, uint32_t debounce_ms,
                  button_active_t active_level, uint32_t long_press_ms,
                  uint32_t double_click_ms, uint32_t repeat_start_ms,
-                 uint32_t repeat_interval_ms) {
+                 uint32_t repeat_interval_ms, button_id_t id) {
+
+  btn->id = id;
   btn->pin = gpio_pin;
   btn->debounce_ms = debounce_ms;
   btn->active_level = active_level;
@@ -40,84 +42,77 @@ static uint8_t button_is_active(button_t *btn, uint8_t state) {
 }
 
 void button_update(button_t *btn) {
-  // debounce
-  if ((ticks - btn->last_change_time) < btn->debounce_ms) {
-    return;
-  }
+  uint8_t current = gpio_read(btn->pin);
 
-  uint8_t current_button_gpio_state = gpio_read(btn->pin);
+  switch (btn->state) {
+  case BUTTON_IDLE:
+    if (button_is_active(btn, current)) {
+      btn->last_change_time = ticks;
+      btn->state = BUTTON_DEBOUNCE;
+    }
+    break;
 
-  // state has been changed
-  if (btn->current_state != current_button_gpio_state) {
+  case BUTTON_WAIT_RELEASE:
+    if (!button_is_active(btn, current)) {
+      btn->state = BUTTON_IDLE;
+    }
+    break;
 
-    btn->current_state = current_button_gpio_state;
-
-    if (button_is_active(btn, current_button_gpio_state)) {
-
-      // pressed
-      btn->press_time = ticks;
-      btn->long_press_event_sent = 0;
-      btn->repeat_active = 0;
-
-    } else {
-
-      // released
-      if (btn->long_press_event_sent) {
-        // ther was a long press - ignore clicks
-        btn->double_click_pending = 0;
+  case BUTTON_DEBOUNCE:
+    if ((ticks - btn->last_change_time) >= btn->debounce_ms) {
+      if (button_is_active(btn, current)) {
+        btn->press_time = ticks;
+        btn->state = BUTTON_PRESSED;
       } else {
-
-        if (btn->double_click_pending &&
-            (ticks - btn->last_release_time <= btn->double_click_ms)) {
-
-          // DOUBLE CLICK
-          btn->double_click_pending = 0;
-
-          event_push((event_t){.type = EVENT_BUTTON_DOUBLE_CLICK,
-                               .data = btn->pin.pin});
-
-        } else {
-          // wait for the second click
-          btn->double_click_pending = 1;
-          btn->last_release_time = ticks;
-        }
+        btn->state = BUTTON_IDLE;
       }
     }
-  }
-
-  // --- long press ---
-  if (button_is_active(btn, btn->current_state)) {
-
-    uint32_t held_time = ticks - btn->press_time;
-
-    if (!btn->long_press_event_sent && (held_time >= btn->long_press_ms)) {
-      btn->long_press_event_sent = 1;
-      btn->double_click_pending = 0;
-      event_push(
-          (event_t){.type = EVENT_BUTTON_LONG_PRESS, .data = btn->pin.pin});
+    break;
+  case BUTTON_PRESSED:
+    if (!button_is_active(btn, current)) {
+      btn->last_release_time = ticks;
+      btn->state = BUTTON_WAIT_SECOND_CLICK;
+    } else if ((ticks - btn->press_time) >= btn->long_press_ms) {
+      event_t e = {.type = EVENT_BUTTON_LONG_PRESS, .data = btn->id};
+      event_push(e);
+      btn->state = BUTTON_REPEAT;
     }
+    break;
+  case BUTTON_WAIT_SECOND_CLICK:
+    if (button_is_active(btn, current)) {
+      btn->last_change_time = ticks;
+      btn->state = BUTTON_DEBOUNCE_SECOND;
+    } else if ((ticks - btn->last_release_time) >= btn->double_click_ms) {
+      event_t e = {.type = EVENT_BUTTON_SINGLE_CLICK, .data = btn->id};
+      event_push(e);
+      btn->state = BUTTON_IDLE;
+    }
+    break;
+  case BUTTON_DEBOUNCE_SECOND:
+    if ((ticks - btn->last_change_time) >= btn->debounce_ms) {
 
-    if (!btn->repeat_active && held_time >= btn->repeat_start_ms) {
-      btn->repeat_active = 1;
+      if (button_is_active(btn, current)) {
+
+        event_push(
+            (event_t){.type = EVENT_BUTTON_DOUBLE_CLICK, .data = btn->id});
+
+        btn->state = BUTTON_WAIT_RELEASE;
+
+      } else {
+        btn->state = BUTTON_WAIT_SECOND_CLICK;
+      }
+    }
+    break;
+  case BUTTON_REPEAT:
+    if (!button_is_active(btn, current)) {
+      btn->state = BUTTON_IDLE;
+    } else if ((ticks - btn->repeat_last_time) >= btn->repeat_interval_ms) {
       btn->repeat_last_time = ticks;
+      event_t e = {.type = EVENT_BUTTON_REPEAT, .data = btn->id};
+      event_push(e);
     }
-
-    if (btn->repeat_active &&
-        (ticks - btn->repeat_last_time >= btn->repeat_interval_ms)) {
-      btn->repeat_last_time = ticks;
-      event_push((event_t){.type = EVENT_BUTTON_REPEAT, .data = btn->pin.pin});
-    }
-  } else {
-    btn->repeat_active = 0;
-  }
-
-  // --- fisnish single click ---
-  if (btn->double_click_pending &&
-      (ticks - btn->last_release_time > btn->double_click_ms)) {
-
-    btn->double_click_pending = 0;
-
-    event_push(
-        (event_t){.type = EVENT_BUTTON_SINGLE_CLICK, .data = btn->pin.pin});
+    break;
+  default:
+    break;
   }
 }
