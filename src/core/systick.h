@@ -34,5 +34,7 @@ void systick_init(uint32_t ticks, systick_clksource_t src);
 // delay in ms
 void systick_delay_ms(uint32_t ms);
 
+uint32_t systick_get_ticks();
+
 // interrupt handler
 void SysTick_Handler(void);

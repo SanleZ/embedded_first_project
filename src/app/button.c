@@ -31,7 +31,9 @@ void button_init(button_t *btn, gpio_pin_t gpio_pin, uint32_t debounce_ms,
   btn->repeat_last_time = 0;
 }
 
-void button_handle_edge(button_t *btn) { btn->last_change_time = ticks; }
+void button_handle_edge(button_t *btn) {
+  btn->last_change_time = systick_get_ticks();
+}
 
 static uint8_t button_is_active(button_t *btn, uint8_t state) {
   if (btn->active_level == BUTTON_ACTIVE_LOW) {
@@ -42,12 +44,13 @@ static uint8_t button_is_active(button_t *btn, uint8_t state) {
 }
 
 void button_update(button_t *btn) {
+  uint32_t now = systick_get_ticks();
   uint8_t current = gpio_read(btn->pin);
 
   switch (btn->state) {
   case BUTTON_IDLE:
     if (button_is_active(btn, current)) {
-      btn->last_change_time = ticks;
+      btn->last_change_time = now;
       btn->state = BUTTON_DEBOUNCE;
     }
     break;
@@ -59,9 +62,9 @@ void button_update(button_t *btn) {
     break;
 
   case BUTTON_DEBOUNCE:
-    if ((ticks - btn->last_change_time) >= btn->debounce_ms) {
+    if ((now - btn->last_change_time) >= btn->debounce_ms) {
       if (button_is_active(btn, current)) {
-        btn->press_time = ticks;
+        btn->press_time = now;
         btn->state = BUTTON_PRESSED;
       } else {
         btn->state = BUTTON_IDLE;
@@ -70,9 +73,9 @@ void button_update(button_t *btn) {
     break;
   case BUTTON_PRESSED:
     if (!button_is_active(btn, current)) {
-      btn->last_release_time = ticks;
+      btn->last_release_time = now;
       btn->state = BUTTON_WAIT_SECOND_CLICK;
-    } else if ((ticks - btn->press_time) >= btn->long_press_ms) {
+    } else if ((now - btn->press_time) >= btn->long_press_ms) {
       event_t e = {.type = EVENT_BUTTON_LONG_PRESS, .data = btn->id};
       event_push(e);
       btn->state = BUTTON_REPEAT;
@@ -80,16 +83,16 @@ void button_update(button_t *btn) {
     break;
   case BUTTON_WAIT_SECOND_CLICK:
     if (button_is_active(btn, current)) {
-      btn->last_change_time = ticks;
+      btn->last_change_time = now;
       btn->state = BUTTON_DEBOUNCE_SECOND;
-    } else if ((ticks - btn->last_release_time) >= btn->double_click_ms) {
+    } else if ((now - btn->last_release_time) >= btn->double_click_ms) {
       event_t e = {.type = EVENT_BUTTON_SINGLE_CLICK, .data = btn->id};
       event_push(e);
       btn->state = BUTTON_IDLE;
     }
     break;
   case BUTTON_DEBOUNCE_SECOND:
-    if ((ticks - btn->last_change_time) >= btn->debounce_ms) {
+    if ((now - btn->last_change_time) >= btn->debounce_ms) {
 
       if (button_is_active(btn, current)) {
 
@@ -106,8 +109,8 @@ void button_update(button_t *btn) {
   case BUTTON_REPEAT:
     if (!button_is_active(btn, current)) {
       btn->state = BUTTON_IDLE;
-    } else if ((ticks - btn->repeat_last_time) >= btn->repeat_interval_ms) {
-      btn->repeat_last_time = ticks;
+    } else if ((now - btn->repeat_last_time) >= btn->repeat_interval_ms) {
+      btn->repeat_last_time = now;
       event_t e = {.type = EVENT_BUTTON_REPEAT, .data = btn->id};
       event_push(e);
     }
