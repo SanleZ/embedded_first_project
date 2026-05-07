@@ -15,7 +15,9 @@
 static uart_t debug_uart;
 volatile uint32_t last_button_irq = 0;
 #define BTN_LINE_0 0
+#define BTN_LINE_2 2
 #define BTN_LINE_3 3
+#define BTN_LINE_4 4
 #define LED_LINE_13 13
 
 #define BTN_1_DEBOUNCE_MS 100
@@ -47,7 +49,7 @@ int main(int argc, char *argv[]) {
   event_init();
   gpio_pin_t gpio_led1_pin = get_gpio_pin(GPIO_PORT_C, LED_LINE_13);
   gpio_pin_t gpio_btn1_pin = get_gpio_pin(GPIO_PORT_A, BTN_LINE_0);
-  gpio_pin_t gpio_btn2_pin = get_gpio_pin(GPIO_PORT_A, BTN_LINE_3);
+  gpio_pin_t gpio_btn2_pin = get_gpio_pin(GPIO_PORT_A, BTN_LINE_4);
 
   button_init(&btn1, gpio_btn1_pin, BTN_1_DEBOUNCE_MS, BUTTON_ACTIVE_LOW,
               BTN_1_LONG_PRESS_MS, BTN_1_DOUBLE_CLICK_MS, BTN_1_REPEAT_START_MS,
@@ -57,6 +59,7 @@ int main(int argc, char *argv[]) {
               BTN_2_REPEAT_INTERVAL_MS, BUTTON_ID_CANCEL);
 
   button_manager_init();
+  led_init(&led1, gpio_led1_pin);
   button_manager_add(&btn1);
   button_manager_add(&btn2);
 
