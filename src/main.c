@@ -9,8 +9,10 @@
 #include "drivers/nvic.h"
 #include "drivers/rcc.h"
 #include "drivers/syscfg.h"
+#include "drivers/uart.h"
 #include <stdint.h>
 
+static uart_t debug_uart;
 volatile uint32_t last_button_irq = 0;
 #define BTN_LINE_0 0
 #define BTN_LINE_3 3
@@ -40,6 +42,8 @@ void on_button_1_irq(void) { button_handle_edge(&btn1); }
 void on_button_2_irq(void) { button_handle_edge(&btn2); }
 
 int main(int argc, char *argv[]) {
+  uart_init(&debug_uart, USART2, 115200);
+  uart_write_string(&debug_uart, "System boot\r\n");
   event_init();
   gpio_pin_t gpio_led1_pin = get_gpio_pin(GPIO_PORT_C, LED_LINE_13);
   gpio_pin_t gpio_btn1_pin = get_gpio_pin(GPIO_PORT_A, BTN_LINE_0);
@@ -55,8 +59,6 @@ int main(int argc, char *argv[]) {
   button_manager_init();
   button_manager_add(&btn1);
   button_manager_add(&btn2);
-
-  led_init(&led1, gpio_led1_pin);
 
   rcc_enable_gpio(gpio_led1_pin);
   rcc_enable_gpio(gpio_btn1_pin);

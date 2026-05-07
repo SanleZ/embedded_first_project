@@ -16,3 +16,5 @@ typedef struct {
 
 void rcc_enable_gpio(gpio_pin_t gpio_pin); // Enable clocks for GPIO port
 void rcc_enable_syscfg(void);              // Enable SYSCFG clock for EXTI
+void rcc_enable_usart1(void);
+void rcc_enable_usart2(void);

@@ -8,3 +8,6 @@ void rcc_enable_gpio(gpio_pin_t gpio_pin) {
 }
 
 void rcc_enable_syscfg(void) { RCC->APB2ENR |= BIT_OFFSET(14); }
+
+void rcc_enable_usart1(void) { RCC->APB2ENR |= RCC_APB2ENR_USART1EN; }
+void rcc_enable_usart2(void) { RCC->APB2ENR |= RCC_APB1ENR_USART2EN; }
