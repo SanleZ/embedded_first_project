@@ -30,15 +30,6 @@ void exti_configure_line(uint8_t line, exti_trigger_t trigger) {
   }
 }
 
-// void exti_enable_line(gpio_pin_t gpio_pin) {
-//   uint8_t pin_num = gpio_pin.pin;
-//   EXTI->IMR |= BIT_OFFSET(pin_num);
-// }
-//
-// void exti_clear_pending(gpio_pin_t gpio_pin) {
-//   uint8_t pin_num = gpio_pin.pin;
-//   EXTI->PR = BIT_OFFSET(pin_num);
-// }
 void exti_enable_line(uint8_t line) {
   if (line > 15)
     return;

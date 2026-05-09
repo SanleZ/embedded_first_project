@@ -2,8 +2,8 @@
 #include "common/common.h"
 #include "stm32f411xe.h"
 
-void rcc_enable_gpio(gpio_pin_t gpio_pin) {
-  uint8_t port_num = gpio_pin.port;
+void rcc_enable_gpio(gpio_port_t gpio_port) {
+  uint8_t port_num = gpio_port;
   RCC->AHB1ENR |= BIT_OFFSET(port_num);
 }
 

@@ -8,8 +8,8 @@
 static void uart_configure_gpio(USART_TypeDef *instance, gpio_pin_t gpio_pin_tx,
                                 gpio_pin_t gpio_pin_rx) {
 
-  rcc_enable_gpio(gpio_pin_tx);
-  rcc_enable_gpio(gpio_pin_rx);
+  rcc_enable_gpio(gpio_pin_tx.port);
+  // rcc_enable_gpio(gpio_pin_rx);
 
   gpio_set_mode(gpio_pin_tx, GPIO_AF_MODE);
   gpio_set_mode(gpio_pin_rx, GPIO_AF_MODE);
@@ -69,3 +69,9 @@ void uart_write_string(uart_t *uart, const char *str) {
     str++;
   }
 };
+
+uint8_t uart_read_byte(uart_t *uart) {
+  while (!(uart->instance->SR & USART_SR_RXNE)) {
+  }
+  return (uint8_t)uart->instance->DR;
+}

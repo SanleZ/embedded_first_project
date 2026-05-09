@@ -63,9 +63,9 @@ int main(int argc, char *argv[]) {
   button_manager_add(&btn1);
   button_manager_add(&btn2);
 
-  rcc_enable_gpio(gpio_led1_pin);
-  rcc_enable_gpio(gpio_btn1_pin);
-  rcc_enable_gpio(gpio_btn2_pin);
+  rcc_enable_gpio(gpio_led1_pin.port);
+  rcc_enable_gpio(gpio_btn1_pin.port);
+  rcc_enable_gpio(gpio_btn2_pin.port);
   rcc_enable_syscfg();
 
   gpio_set_mode(gpio_led1_pin, GPIO_OUTPUT_MODE);
@@ -93,11 +93,15 @@ int main(int argc, char *argv[]) {
 
   // Enable interrrupt in NVIC
   nvic_enable_irq(EXTI0_IRQn);
-  nvic_enable_irq(EXTI3_IRQn);
+  nvic_enable_irq(EXTI4_IRQn);
 
   event_t e;
 
   while (1) {
+    uint8_t byte = uart_read_byte(&debug_uart);
+    uart_write_byte(&debug_uart, byte);
+    uart_write_byte(&debug_uart, byte);
+
     while ((e = event_pop()).type != EVENT_NONE) {
       switch (e.type) {
       case EVENT_BUTTON_SINGLE_CLICK: {

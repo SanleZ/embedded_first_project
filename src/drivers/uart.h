@@ -15,4 +15,4 @@ void uart_write_byte(uart_t *uart, uint32_t byte);
 
 void uart_write_string(uart_t *uart, const char *str);
 
-void uart_read_byte(uart_t *uart);
+uint8_t uart_read_byte(uart_t *uart);
