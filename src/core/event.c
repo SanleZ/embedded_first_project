@@ -1,4 +1,5 @@
 #include "event.h"
+#include "cmsis_gcc.h"
 #include <stdint.h>
 
 #define EVENT_QUEUE_SIZE 8
@@ -15,26 +16,37 @@ void event_init() {
 }
 
 uint8_t event_push(event_t e) {
+  uint8_t status;
+
+  __disable_irq();
+
   uint8_t next = (head + 1) % EVENT_QUEUE_SIZE;
 
   if (next == tail) {
     total_dropped++;
-    return 0;
+    status = 0;
+  } else {
+    queue[head] = e;
+    head = next;
+    total_pushed++;
+    status = 1;
   }
-
-  queue[head] = e;
-  head = next;
-  total_pushed++;
-  return 1;
+  __enable_irq();
+  return status;
 }
 
 event_t event_pop() {
   event_t e = {.type = EVENT_NONE};
+  __disable_irq();
+
   if (head == tail) {
+    __enable_irq();
     return e;
   }
   e = queue[tail];
   tail = (tail + 1) % EVENT_QUEUE_SIZE;
+  __enable_irq();
+
   return e;
 }
 

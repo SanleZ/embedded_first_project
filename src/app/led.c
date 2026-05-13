@@ -1,6 +1,6 @@
 #include "led.h"
-#include "core/systick.h"
 #include "drivers/gpio.h"
+#include "drivers/timer.h"
 #include <stdint.h>
 
 void led_init(led_t *led, gpio_pin_t gpio_pin) {
@@ -26,7 +26,7 @@ void led_update(led_t *led) {
     break;
   default: {
     uint32_t period = led->blink_period_ms;
-    uint32_t now = systick_get_ticks();
+    uint32_t now = timer_get_ticks();
 
     if (period < 0) {
       gpio_write(led->gpio_pin, 0);
@@ -37,6 +37,14 @@ void led_update(led_t *led) {
     }
     break;
   }
+  }
+}
+
+void led_toggle(led_t *led) {
+  if (led->mode == LED_MODE_ON) {
+    led->mode = LED_MODE_OFF;
+  } else {
+    led->mode = LED_MODE_ON;
   }
 }
 

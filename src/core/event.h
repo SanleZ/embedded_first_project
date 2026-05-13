@@ -9,6 +9,7 @@ typedef enum {
   EVENT_BUTTON_LONG_PRESS,
   EVENT_BUTTON_DOUBLE_CLICK,
   EVENT_BUTTON_REPEAT,
+  EVENT_TIMER_TICK
 } event_type_t;
 
 typedef struct {

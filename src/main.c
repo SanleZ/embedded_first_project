@@ -4,12 +4,14 @@
 #include "app/led.h"
 #include "common/common.h"
 #include "core/event.h"
+#include "core/scheduler.h"
 #include "core/systick.h"
 #include "drivers/exti.h"
 #include "drivers/gpio.h"
 #include "drivers/nvic.h"
 #include "drivers/rcc.h"
 #include "drivers/syscfg.h"
+#include "drivers/timer.h"
 #include "drivers/uart.h"
 #include "stm32f411xe.h"
 #include <stdint.h>
@@ -45,6 +47,10 @@ void on_button_1_irq(void) { button_handle_edge(&btn1); }
 
 void on_button_2_irq(void) { button_handle_edge(&btn2); }
 
+static void task_buttons(void) { button_manager_update(); }
+static void task_led(void) { led_update(&led1); }
+static void task_cli(void) { cli_update(); }
+
 int main(int argc, char *argv[]) {
   uart_init(&debug_uart, USART2, 115200);
   uart_write_string(&debug_uart, "System boot\r\n");
@@ -77,6 +83,7 @@ int main(int argc, char *argv[]) {
   gpio_set_pull(gpio_btn2_pin, GPIO_PULLUP);
 
   systick_init(16000, SYSTICK_SRC_AHB);
+  timer2_init();
   cli_init(&debug_uart, &led1);
 
   /* Map EXTI line to GPIO */
@@ -98,12 +105,20 @@ int main(int argc, char *argv[]) {
   nvic_enable_irq(EXTI0_IRQn);
   nvic_enable_irq(EXTI4_IRQn);
   nvic_enable_irq(USART2_IRQn);
+  nvic_enable_irq(TIM2_IRQn);
 
   event_t e;
+
+  task_t tasks[] = {{.interval = 1, .last_run = 0, .handler = task_cli},
+                    {.interval = 5, .last_run = 0, .handler = task_buttons},
+                    {.interval = 10, .last_run = 0, .handler = task_led}};
 
   while (1) {
     while ((e = event_pop()).type != EVENT_NONE) {
       switch (e.type) {
+      case EVENT_TIMER_TICK:
+        // led_toggle(&led1);
+        break;
       case EVENT_BUTTON_SINGLE_CLICK: {
         led_mode_t led_status =
             led1.mode == LED_MODE_ON ? LED_MODE_OFF : LED_MODE_ON;
@@ -126,8 +141,7 @@ int main(int argc, char *argv[]) {
         break;
       }
     }
-    button_manager_update();
-    led_update(&led1);
-    cli_update();
+
+    scheduler_run(tasks, 3);
   }
 }
