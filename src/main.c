@@ -1,5 +1,6 @@
 #include "app/button.h"
 #include "app/button_manager.h"
+#include "app/cli.h"
 #include "app/led.h"
 #include "common/common.h"
 #include "core/event.h"
@@ -10,6 +11,7 @@
 #include "drivers/rcc.h"
 #include "drivers/syscfg.h"
 #include "drivers/uart.h"
+#include "stm32f411xe.h"
 #include <stdint.h>
 
 static uart_t debug_uart;
@@ -75,6 +77,7 @@ int main(int argc, char *argv[]) {
   gpio_set_pull(gpio_btn2_pin, GPIO_PULLUP);
 
   systick_init(16000, SYSTICK_SRC_AHB);
+  cli_init(&debug_uart, &led1);
 
   /* Map EXTI line to GPIO */
   syscfg_map_exti_line(gpio_btn1_pin);
@@ -94,32 +97,30 @@ int main(int argc, char *argv[]) {
   // Enable interrrupt in NVIC
   nvic_enable_irq(EXTI0_IRQn);
   nvic_enable_irq(EXTI4_IRQn);
+  nvic_enable_irq(USART2_IRQn);
 
   event_t e;
 
   while (1) {
-    uint8_t byte = uart_read_byte(&debug_uart);
-    uart_write_byte(&debug_uart, byte);
-    uart_write_byte(&debug_uart, byte);
-
     while ((e = event_pop()).type != EVENT_NONE) {
       switch (e.type) {
       case EVENT_BUTTON_SINGLE_CLICK: {
-
-        led_mode_t led_status = led1.mode == LED_MODE_ALWAYS_ON
-                                    ? LED_MODE_BLINK_SLOW
-                                    : LED_MODE_ALWAYS_ON;
+        led_mode_t led_status =
+            led1.mode == LED_MODE_ON ? LED_MODE_OFF : LED_MODE_ON;
         led_set_mode(&led1, led_status);
         break;
       }
       case EVENT_BUTTON_LONG_PRESS:
-        led_set_mode(&led1, LED_MODE_BLINK_FAST);
+        led1.blink_period_ms = 300;
+        led_set_mode(&led1, LED_MODE_BLINK);
         break;
       case EVENT_BUTTON_DOUBLE_CLICK:
-        led_set_mode(&led1, LED_MODE_BLINK_SUPER_FAST);
+        led1.blink_period_ms = 100;
+        led_set_mode(&led1, LED_MODE_BLINK);
         break;
       case EVENT_BUTTON_REPEAT:
-        led_set_mode(&led1, LED_MODE_BLINK_SUPER_SLOW);
+        led1.blink_period_ms = 1000;
+        led_set_mode(&led1, LED_MODE_BLINK);
         break;
       default:
         break;
@@ -127,5 +128,6 @@ int main(int argc, char *argv[]) {
     }
     button_manager_update();
     led_update(&led1);
+    cli_update();
   }
 }

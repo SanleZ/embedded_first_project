@@ -2,36 +2,10 @@
 #include "core/systick.h"
 #include "drivers/gpio.h"
 #include <stdint.h>
-#include <sys/types.h>
-
-static uint32_t led_get_period(led_mode_t mode) {
-  switch (mode) {
-  case LED_MODE_ALWAYS_ON:
-    return 0;
-    break;
-  case LED_MODE_ALWAYS_OFF:
-    return -1;
-    break;
-  case LED_MODE_BLINK_FAST:
-    return 100;
-    break;
-  case LED_MODE_BLINK_SLOW:
-    return 300;
-    break;
-  case LED_MODE_BLINK_SUPER_FAST:
-    return 50;
-    break;
-  case LED_MODE_BLINK_SUPER_SLOW:
-    return 1000;
-    break;
-  default:
-    return 0;
-  }
-}
 
 void led_init(led_t *led, gpio_pin_t gpio_pin) {
   led->gpio_pin = gpio_pin;
-  led->mode = LED_MODE_ALWAYS_ON;
+  led->mode = LED_MODE_ON;
   led->state = LED_STATE_ON;
   led->last_toggle = 0;
 }
@@ -44,14 +18,14 @@ void led_set_mode(led_t *led, led_mode_t mode) { led->mode = mode; }
 
 void led_update(led_t *led) {
   switch (led->mode) {
-  case LED_MODE_ALWAYS_ON:
+  case LED_MODE_ON:
     gpio_reset(led->gpio_pin);
     break;
-  case LED_MODE_ALWAYS_OFF:
+  case LED_MODE_OFF:
     gpio_set(led->gpio_pin);
     break;
   default: {
-    uint32_t period = led_get_period(led->mode);
+    uint32_t period = led->blink_period_ms;
     uint32_t now = systick_get_ticks();
 
     if (period < 0) {
@@ -64,4 +38,8 @@ void led_update(led_t *led) {
     break;
   }
   }
+}
+
+void led_set_blink_delay(led_t *led, uint32_t delay_ms) {
+  led->blink_period_ms = delay_ms < 10000 ? delay_ms : 10000;
 }

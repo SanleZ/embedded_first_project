@@ -3,6 +3,8 @@
 
 typedef enum { GPIO_PORT_A, GPIO_PORT_B, GPIO_PORT_C } gpio_port_t;
 
+#define COMMON_NULL ((void *)0)
+
 typedef struct {
   gpio_port_t port;
   uint16_t pin;

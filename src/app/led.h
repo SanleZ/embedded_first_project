@@ -1,13 +1,11 @@
+#pragma once
 #include "common/common.h"
 #include <stdint.h>
 
 typedef enum {
-  LED_MODE_ALWAYS_ON,
-  LED_MODE_ALWAYS_OFF,
-  LED_MODE_BLINK_FAST,
-  LED_MODE_BLINK_SLOW,
-  LED_MODE_BLINK_SUPER_FAST,
-  LED_MODE_BLINK_SUPER_SLOW
+  LED_MODE_ON,
+  LED_MODE_OFF,
+  LED_MODE_BLINK,
 } led_mode_t;
 
 typedef enum { LED_STATE_OFF = 0, LED_STATE_ON } led_state_t;
@@ -17,6 +15,7 @@ typedef struct {
   uint32_t last_toggle;
   led_mode_t mode;
   gpio_pin_t gpio_pin;
+  uint32_t blink_period_ms;
 } led_t;
 
 void led_init(led_t *led, gpio_pin_t gpio_pin);
@@ -30,3 +29,5 @@ void led_on(led_t *led);
 void led_off(led_t *led);
 
 void led_toggle(led_t *led);
+
+void led_set_blink_delay(led_t *led, uint32_t delay);

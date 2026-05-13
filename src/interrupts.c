@@ -1,4 +1,5 @@
 #include "drivers/exti.h"
+#include <stdint.h>
 
 void EXTI0_IRQHandler(void) { exti_handle_irq(0); }
 
