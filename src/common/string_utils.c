@@ -98,3 +98,31 @@ uint32_t str_len(const char *s) {
   }
   return len;
 }
+
+char *str_u32_to_str(int32_t val, char *buf) {
+  int i = 11;
+  buf[i] = '\0';
+  bool is_negative = false;
+
+  uint32_t uval = val;
+
+  if (val < 0) {
+    is_negative = true;
+    uval = -uval;
+  }
+
+  if (uval == 0) {
+    buf[--i] = '0';
+  } else {
+    while (uval > 0) {
+      buf[--i] = (uval % 10) + '0';
+      uval /= 10;
+    }
+  }
+
+  if (is_negative) {
+    buf[--i] = '-';
+  }
+
+  return &buf[i];
+}

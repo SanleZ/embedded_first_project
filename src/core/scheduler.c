@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 void scheduler_run(task_t *tasks, uint32_t count) {
-  uint32_t now = timer_get_ticks();
+  uint32_t now = timer2_get_ticks();
 
   for (uint32_t i = 0; i < count; i++) {
     if ((now - tasks[i].last_run) > tasks[i].interval) {

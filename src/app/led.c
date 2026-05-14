@@ -26,7 +26,7 @@ void led_update(led_t *led) {
     break;
   default: {
     uint32_t period = led->blink_period_ms;
-    uint32_t now = timer_get_ticks();
+    uint32_t now = timer2_get_ticks();
 
     if (period < 0) {
       gpio_write(led->gpio_pin, 0);

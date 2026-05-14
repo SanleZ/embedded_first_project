@@ -1,8 +1,8 @@
 #include "button.h"
 
 #include "core/event.h"
-#include "core/systick.h"
 #include "drivers/gpio.h"
+#include "drivers/timer.h"
 #include <stdint.h>
 
 void button_init(button_t *btn, gpio_pin_t gpio_pin, uint32_t debounce_ms,
@@ -32,7 +32,7 @@ void button_init(button_t *btn, gpio_pin_t gpio_pin, uint32_t debounce_ms,
 }
 
 void button_handle_edge(button_t *btn) {
-  btn->last_change_time = systick_get_ticks();
+  btn->last_change_time = timer2_get_ticks();
 }
 
 static uint8_t button_is_active(button_t *btn, uint8_t state) {
@@ -44,7 +44,7 @@ static uint8_t button_is_active(button_t *btn, uint8_t state) {
 }
 
 void button_update(button_t *btn) {
-  uint32_t now = systick_get_ticks();
+  uint32_t now = timer2_get_ticks();
   uint8_t current = gpio_read(btn->pin);
 
   switch (btn->state) {
@@ -95,9 +95,9 @@ void button_update(button_t *btn) {
     if ((now - btn->last_change_time) >= btn->debounce_ms) {
 
       if (button_is_active(btn, current)) {
-
-        event_push(
-            (event_t){.type = EVENT_BUTTON_DOUBLE_CLICK, .data = btn->id});
+        event_t e =
+            (event_t){.type = EVENT_BUTTON_DOUBLE_CLICK, .data = btn->id};
+        event_push(e);
 
         btn->state = BUTTON_WAIT_RELEASE;
 

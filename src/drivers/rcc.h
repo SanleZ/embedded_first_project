@@ -18,3 +18,4 @@ void rcc_enable_gpio(gpio_port_t gpio_port); // Enable clocks for GPIO port
 void rcc_enable_syscfg(void);                // Enable SYSCFG clock for EXTI
 void rcc_enable_usart1(void);
 void rcc_enable_usart2(void);
+void rcc_enable_timer3(void);
