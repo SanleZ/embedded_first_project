@@ -4,7 +4,6 @@
 #include "app/encoder.h"
 #include "app/led.h"
 #include "common/common.h"
-#include "common/string_utils.h"
 #include "core/event.h"
 #include "core/scheduler.h"
 #include "core/systick.h"
@@ -12,6 +11,8 @@
 #include "drivers/gpio.h"
 #include "drivers/nvic.h"
 #include "drivers/rcc.h"
+#include "drivers/spi.h"
+#include "drivers/st7789.h"
 #include "drivers/syscfg.h"
 #include "drivers/timer.h"
 #include "drivers/uart.h"
@@ -45,49 +46,28 @@ static button_t btn1;
 static button_t btn2;
 static led_t led1;
 static led_t led2;
-static encoder_t encoder1;
-static uint16_t brightness = 500;
-static const uint16_t MIN_BRIGHTNESS = 0;
-static const uint16_t MAX_BRIGHTNESS = 1000;
-static const uint16_t BRIGHTNESS_STEP = 50;
+// static encoder_t encoder1;
+// static uint16_t brightness = 50;
+// static const uint16_t MIN_BRIGHTNESS = 0;
+// static const uint16_t MAX_BRIGHTNESS = 1000;
+// static const uint16_t BRIGHTNESS_STEP = 50;
 
 void on_button_1_irq(void) { button_handle_edge(&btn1); }
 
 void on_button_2_irq(void) { button_handle_edge(&btn2); }
 
-static void print_to_cli() {
-  char ccr_value_buffer[12];
-  char *ccr_str = str_u32_to_str(TIM3->CCR3, ccr_value_buffer);
-  char led_brightness[30] = "LED brightness: ";
-  str_concat(led_brightness, ccr_str, 30);
-  str_concat(led_brightness, "\r\n", 30);
-  uart_write_string(&debug_uart, led_brightness);
-}
+// static void print_to_cli() {
+//   char ccr_value_buffer[12];
+//   char *ccr_str = str_u32_to_str(TIM3->CCR3, ccr_value_buffer);
+//   char led_brightness[30] = "LED brightness: ";
+//   str_concat(led_brightness, ccr_str, 30);
+//   str_concat(led_brightness, "\r\n", 30);
+//   uart_write_string(&debug_uart, led_brightness);
+// }
 
 static void task_buttons(void) { button_manager_update(); }
 static void task_led(void) { led_update(&led1); }
 static void task_cli(void) { cli_update(); }
-static void task_encoder(void) {
-  encoder_event_t event = encoder_update(&encoder1);
-  switch (event) {
-  case ENCODER_EVENT_CW:
-    if ((brightness + BRIGHTNESS_STEP) <= MAX_BRIGHTNESS) {
-      brightness += BRIGHTNESS_STEP;
-    }
-    print_to_cli();
-    TIM3->CCR3 = brightness;
-    break;
-  case ENCODER_EVENT_CCW:
-    if ((brightness - BRIGHTNESS_STEP) >= MIN_BRIGHTNESS) {
-      brightness -= BRIGHTNESS_STEP;
-    }
-    print_to_cli();
-    TIM3->CCR3 = brightness;
-    break;
-  default:
-    break;
-  }
-}
 
 int main(int argc, char *argv[]) {
   uart_init(&debug_uart, USART2, 115200);
@@ -97,8 +77,8 @@ int main(int argc, char *argv[]) {
   gpio_pin_t gpio_led2_pin = get_gpio_pin(GPIO_PORT_B, 0);
   gpio_pin_t gpio_btn1_pin = get_gpio_pin(GPIO_PORT_A, BTN_LINE_0);
   gpio_pin_t gpio_btn2_pin = get_gpio_pin(GPIO_PORT_A, BTN_LINE_4);
-  gpio_pin_t gpio_enc1_pin_a = get_gpio_pin(GPIO_PORT_B, 3);
-  gpio_pin_t gpio_enc1_pin_b = get_gpio_pin(GPIO_PORT_B, 4);
+  gpio_pin_t gpio_enc1_pin_a = get_gpio_pin(GPIO_PORT_B, 12);
+  gpio_pin_t gpio_enc1_pin_b = get_gpio_pin(GPIO_PORT_B, 13);
 
   button_init(&btn1, gpio_btn1_pin, BTN_1_DEBOUNCE_MS, BUTTON_ACTIVE_LOW,
               BTN_1_LONG_PRESS_MS, BTN_1_DOUBLE_CLICK_MS, BTN_1_REPEAT_START_MS,
@@ -114,8 +94,10 @@ int main(int argc, char *argv[]) {
   led_init(&led1, gpio_led1_pin);
   led_init(&led2, gpio_led2_pin);
 
-  encoder_init(&encoder1, gpio_enc1_pin_a, gpio_enc1_pin_b);
-
+  // encoder_init(&encoder1, gpio_enc1_pin_a, gpio_enc1_pin_b);
+  spi1_init();
+  st7789_init();
+  encoder_hw_init();
   rcc_enable_gpio(gpio_led1_pin.port);
   rcc_enable_gpio(gpio_led2_pin.port);
   rcc_enable_gpio(gpio_btn1_pin.port);
@@ -174,6 +156,7 @@ int main(int argc, char *argv[]) {
                     {.interval = 1, .last_run = 0, .handler = task_led},
                     {.interval = 1, .last_run = 0, .handler = task_encoder}};
   while (1) {
+    st7789_demo_tick();
     while ((e = event_pop()).type != EVENT_NONE) {
       switch (e.type) {
       case EVENT_TIMER_TICK:

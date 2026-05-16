@@ -20,3 +20,7 @@ typedef struct {
 void encoder_init(encoder_t *enc, gpio_pin_t pin_a, gpio_pin_t pin_b);
 
 encoder_event_t encoder_update(encoder_t *enc);
+
+void encoder_hw_init(void);
+
+void task_encoder(void);

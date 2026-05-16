@@ -19,3 +19,4 @@ void rcc_enable_syscfg(void);                // Enable SYSCFG clock for EXTI
 void rcc_enable_usart1(void);
 void rcc_enable_usart2(void);
 void rcc_enable_timer3(void);
+void rcc_enable_spi1(void);
